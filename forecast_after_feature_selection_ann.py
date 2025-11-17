@@ -1,22 +1,41 @@
-#%%
+# %%
 import os
 import pandas as pd
-#%%
+
+# %%
 path = './dataset'
-datasets_path = path+'/dataset/solar_stations'
-#%%
-mlr_files = sorted([os.path.join(path+'/result_of_paper/ann/', file) for file in os.listdir(path+'/result_of_paper/ann/') if file.endswith('.csv') and 'mlr' in file and 'forecast' in file])
-svr_files = sorted([os.path.join(path+'/result_of_paper/ann/', file) for file in os.listdir(path+'/result_of_paper/ann/') if file.endswith('.csv') and 'svr' in file and 'forecast' in file])
-lgb_files = sorted([os.path.join(path+'/result_of_paper/ann/', file) for file in os.listdir(path+'/result_of_paper/ann/') if file.endswith('.csv') and 'lgb' in file and 'forecast' in file])
-mlp_files = sorted([os.path.join(path+'/result_of_paper/ann/', file) for file in os.listdir(path+'/result_of_paper/ann/') if file.endswith('.csv') and 'mlp' in file and 'forecast' in file])
+datasets_path = path + '/dataset/solar_stations'
+# %%
+mlr_files = sorted(
+    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
+     file.endswith('.csv') and 'mlr' in file and 'forecast' in file])
+svr_files = sorted(
+    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
+     file.endswith('.csv') and 'svr' in file and 'forecast' in file])
+lgb_files = sorted(
+    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
+     file.endswith('.csv') and 'lgb' in file and 'forecast' in file])
+mlp_files = sorted(
+    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
+     file.endswith('.csv') and 'mlp' in file and 'forecast' in file])
 
 df_list = []
-for df_index in [1,2,4,5,6,7,8]:
-  df_list.append(pd.read_csv(f'{path}/result_of_paper/ann/forecast_result_{str(df_index)}_.csv'))
+site_names = [1, 2, 4, 5, 6, 7, 8]
+operation_hours_array = [
+    ('06:00', '21:30'),
+    ('00:00', '23:59'),
+    ('00:00', '23:59'),
+    ('00:00', '23:59'),
+    ('06:00', '21:00'),
+    ('06:00', '21:00'),
+    ('06:00', '19:00')
+]
+for df_index in [1, 2, 4, 5, 6, 7, 8]:
+    df_list.append(pd.read_csv(f'{path}/result_of_paper/ann/forecast_result_{str(df_index)}_.csv'))
 
-#%%
-a = [1,2,4,5,6,7,8]
-#%%
+# %%
+
+# %%
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
@@ -27,24 +46,42 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import numpy as np
 import math
 
-test_size = 2/24
+test_size = 2 / 24
 
 # mlr forcecast reforecast features
 site1_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'lag_8']
-site2_features_mlr_forecast = ['Total solar irradiance (W/m2)', 'lag_4', 'lag_2', 'lag_5', 'hour_cos', 'lag_3', 'lag_6', 'Power (MW)', 'same_time_max', 'lag_7', 'diff_75min', 'lag_1', 'diff_90min', 'diff_15min', 'diff_45min', 'diff_60min', 'diff_105min', 'overall_mean', 'same_time_min', 'hour_sin', 'same_time_std', 'Air temperature  (°C)']
-site4_features_mlr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'lag_8', 'same_weekday_std']
-site5_features_mlr_forecast = ['lag_1', 'Power (MW)', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'same_weekday_std', 'lag_8']
-site6_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'Total solar irradiance (W/m2)', 'lag_6', 'lag_7', 'lag_8', 'same_time_mean', 'diff_90min']
-site7_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_6', 'lag_5', 'lag_7', 'Total solar irradiance (W/m2)', 'same_time_mean', 'diff_105min', 'diff_75min', 'hour_cos']
-site8_features_mlr_forecast = ['lag_1', 'lag_2', 'Power (MW)', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_90min', 'diff_105min', 'same_time_max', 'hour_cos', 'diff_75min', 'lag_8', 'diff_60min', 'same_weekday_mean', 'same_weekday_std', 'diff_45min']
+site2_features_mlr_forecast = ['Total solar irradiance (W/m2)', 'lag_4', 'lag_2', 'lag_5', 'hour_cos', 'lag_3', 'lag_6',
+                               'Power (MW)', 'same_time_max', 'lag_7', 'diff_75min', 'lag_1', 'diff_90min',
+                               'diff_15min', 'diff_45min', 'diff_60min', 'diff_105min', 'overall_mean', 'same_time_min',
+                               'hour_sin', 'same_time_std', 'Air temperature  (°C)']
+site4_features_mlr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'lag_8',
+                               'same_weekday_std']
+site5_features_mlr_forecast = ['lag_1', 'Power (MW)', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'same_weekday_std', 'lag_8']
+site6_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5',
+                               'Total solar irradiance (W/m2)', 'lag_6', 'lag_7', 'lag_8', 'same_time_mean',
+                               'diff_90min']
+site7_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_6', 'lag_5', 'lag_7',
+                               'Total solar irradiance (W/m2)', 'same_time_mean', 'diff_105min', 'diff_75min',
+                               'hour_cos']
+site8_features_mlr_forecast = ['lag_1', 'lag_2', 'Power (MW)', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_90min', 'diff_105min', 'same_time_max', 'hour_cos', 'diff_75min', 'lag_8',
+                               'diff_60min', 'same_weekday_mean', 'same_weekday_std', 'diff_45min']
 
-site1_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'Total solar irradiance (W/m2)', 'lag_6', 'lag_7', 'diff_105min', 'diff_90min']
-site2_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'diff_90min']
-site4_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'diff_90min', 'diff_75min']
-site5_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'Total solar irradiance (W/m2)', 'diff_90min']
-site6_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'same_time_max']
-site7_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'diff_75min']
-site8_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'diff_105min', 'diff_90min', 'diff_75min', 'same_time_mean']
+site1_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5',
+                               'Total solar irradiance (W/m2)', 'lag_6', 'lag_7', 'diff_105min', 'diff_90min']
+site2_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'diff_90min']
+site4_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'diff_90min', 'diff_75min']
+site5_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'Total solar irradiance (W/m2)', 'diff_90min']
+site6_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'same_time_max']
+site7_features_svr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'diff_75min']
+site8_features_svr_forecast = ['Power (MW)', 'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7',
+                               'diff_105min', 'diff_90min', 'diff_75min', 'same_time_mean']
 
 site1_features_lgb_forecast = ['Power (MW)', 'Total solar irradiance (W/m2)']
 site2_features_lgb_forecast = ['Power (MW)', 'hour_sin']
@@ -54,180 +91,205 @@ site6_features_lgb_forecast = ['Power (MW)', 'hour_sin']
 site7_features_lgb_forecast = ['Power (MW)', 'hour_sin']
 site8_features_lgb_forecast = ['Power (MW)', 'lag_1', 'hour_sin']
 
-site1_features_mlp_forecast = ['Total solar irradiance (W/m2)', 'lag_4', 'lag_2', 'lag_5', 'hour_cos', 'lag_3', 'lag_6', 'Power (MW)', 'same_time_max', 'lag_7', 'diff_75min', 'lag_1', 'diff_90min', 'diff_15min', 'diff_45min']
-site2_features_mlp_forecast = ['hour_cos', 'lag_4', 'lag_6', 'lag_3', 'lag_2', 'Power (MW)', 'lag_1', 'lag_5', 'lag_7', 'diff_75min', 'diff_105min', 'same_time_mean', 'diff_90min']
-site4_features_mlp_forecast = ['lag_5', 'lag_2', 'lag_3', 'lag_4', 'lag_1', 'Power (MW)', 'lag_6', 'hour_cos', 'lag_7', 'hour_sin', 'diff_90min']
-site5_features_mlp_forecast = ['lag_3', 'lag_2', 'lag_4', 'lag_5', 'hour_cos', 'lag_1', 'Power (MW)', 'lag_6', 'hour_sin', 'lag_7', 'diff_75min', 'diff_105min']
-site6_features_mlp_forecast = ['Power (MW)', 'hour_sin', 'lag_2', 'hour_cos', 'diff_15min', 'Total solar irradiance (W/m2)', 'diff_105min']
-site7_features_mlp_forecast = ['hour_cos', 'lag_2', 'lag_3', 'lag_6', 'Power (MW)', 'lag_5', 'lag_4', 'lag_7', 'same_time_mean', 'diff_105min', 'lag_1', 'diff_75min', 'diff_45min', 'diff_90min', 'hour_sin']
-site8_features_mlp_forecast = ['Power (MW)', 'lag_2', 'lag_3', 'hour_cos', 'lag_5', 'lag_7', 'lag_6', 'lag_1', 'lag_4', 'hour_sin', 'diff_105min', 'diff_75min', 'same_time_std', 'diff_90min', 'diff_60min', 'diff_45min']
+site1_features_mlp_forecast = ['Total solar irradiance (W/m2)', 'lag_4', 'lag_2', 'lag_5', 'hour_cos', 'lag_3', 'lag_6',
+                               'Power (MW)', 'same_time_max', 'lag_7', 'diff_75min', 'lag_1', 'diff_90min',
+                               'diff_15min', 'diff_45min']
+site2_features_mlp_forecast = ['hour_cos', 'lag_4', 'lag_6', 'lag_3', 'lag_2', 'Power (MW)', 'lag_1', 'lag_5', 'lag_7',
+                               'diff_75min', 'diff_105min', 'same_time_mean', 'diff_90min']
+site4_features_mlp_forecast = ['lag_5', 'lag_2', 'lag_3', 'lag_4', 'lag_1', 'Power (MW)', 'lag_6', 'hour_cos', 'lag_7',
+                               'hour_sin', 'diff_90min']
+site5_features_mlp_forecast = ['lag_3', 'lag_2', 'lag_4', 'lag_5', 'hour_cos', 'lag_1', 'Power (MW)', 'lag_6',
+                               'hour_sin', 'lag_7', 'diff_75min', 'diff_105min']
+site6_features_mlp_forecast = ['Power (MW)', 'hour_sin', 'lag_2', 'hour_cos', 'diff_15min',
+                               'Total solar irradiance (W/m2)', 'diff_105min']
+site7_features_mlp_forecast = ['hour_cos', 'lag_2', 'lag_3', 'lag_6', 'Power (MW)', 'lag_5', 'lag_4', 'lag_7',
+                               'same_time_mean', 'diff_105min', 'lag_1', 'diff_75min', 'diff_45min', 'diff_90min',
+                               'hour_sin']
+site8_features_mlp_forecast = ['Power (MW)', 'lag_2', 'lag_3', 'hour_cos', 'lag_5', 'lag_7', 'lag_6', 'lag_1', 'lag_4',
+                               'hour_sin', 'diff_105min', 'diff_75min', 'same_time_std', 'diff_90min', 'diff_60min',
+                               'diff_45min']
 
-site1_features_list = [site1_features_mlr_forecast, site1_features_svr_forecast, site1_features_lgb_forecast, site1_features_mlp_forecast]
-site2_features_list = [site2_features_mlr_forecast, site2_features_svr_forecast, site2_features_lgb_forecast, site2_features_mlp_forecast]
-site4_features_list = [site4_features_mlr_forecast, site4_features_svr_forecast, site4_features_lgb_forecast, site4_features_mlp_forecast]
-site5_features_list = [site5_features_mlr_forecast, site5_features_svr_forecast, site5_features_lgb_forecast, site5_features_mlp_forecast]
-site6_features_list = [site6_features_mlr_forecast, site6_features_svr_forecast, site6_features_lgb_forecast, site6_features_mlp_forecast]
-site7_features_list = [site7_features_mlr_forecast, site7_features_svr_forecast, site7_features_lgb_forecast, site7_features_mlp_forecast]
-site8_features_list = [site8_features_mlr_forecast, site8_features_svr_forecast, site8_features_lgb_forecast, site8_features_mlp_forecast]
+site1_features_list = [site1_features_mlr_forecast, site1_features_svr_forecast, site1_features_lgb_forecast,
+                       site1_features_mlp_forecast]
+site2_features_list = [site2_features_mlr_forecast, site2_features_svr_forecast, site2_features_lgb_forecast,
+                       site2_features_mlp_forecast]
+site4_features_list = [site4_features_mlr_forecast, site4_features_svr_forecast, site4_features_lgb_forecast,
+                       site4_features_mlp_forecast]
+site5_features_list = [site5_features_mlr_forecast, site5_features_svr_forecast, site5_features_lgb_forecast,
+                       site5_features_mlp_forecast]
+site6_features_list = [site6_features_mlr_forecast, site6_features_svr_forecast, site6_features_lgb_forecast,
+                       site6_features_mlp_forecast]
+site7_features_list = [site7_features_mlr_forecast, site7_features_svr_forecast, site7_features_lgb_forecast,
+                       site7_features_mlp_forecast]
+site8_features_list = [site8_features_mlr_forecast, site8_features_svr_forecast, site8_features_lgb_forecast,
+                       site8_features_mlp_forecast]
 
-features_list =[site1_features_list, site2_features_list, site4_features_list, site5_features_list,site6_features_list, site7_features_list, site8_features_list]
+features_list = [site1_features_list, site2_features_list, site4_features_list, site5_features_list,
+                 site6_features_list, site7_features_list, site8_features_list]
 
 target = 'Power (MW)'
 shifted_target = 'power_shifted'
 
-#%%
+# %%
 import joblib
 import numpy as np
 from datetime import time
 from sklearn.neural_network import MLPRegressor
 
 
-forecasted_df_list = []
-for df, df_index,features in zip(df_list, a, features_list):
-  print('----------------------------------------------------------------------------------------------')
-  print(df_index)
+def do_forecast(df_list, site_names, features_list):
+    forecasted_df_list = []
+    for df, df_index, features in zip(df_list, site_names, features_list):
+        print('----------------------------------------------------------------------------------------------')
+        print(df_index)
 
-  df[shifted_target] = df[target].shift(-1)
-  df = df.dropna().reset_index(drop=True)
+        df[shifted_target] = df[target].shift(-1)
+        df = df.dropna().reset_index(drop=True)
 
-  X_total = df.copy()
-  y = df[shifted_target]
-  time_col = df['Time']
+        X_total = df.copy()
+        y = df[shifted_target]
+        time_col = df['Time']
 
+        # 시계열 순서 기반 분할
+        split_index = int(len(X_total) * (1 - test_size))
 
-  # 시계열 순서 기반 분할
-  split_index = int(len(X_total) * (1 - test_size))
+        y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
+        time_train, time_test = time_col.iloc[:split_index], time_col.iloc[split_index:]
 
-  y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
-  time_train, time_test = time_col.iloc[:split_index], time_col.iloc[split_index:]
+        # 정규화
+        scaler = StandardScaler()
 
-  # 정규화
-  scaler = StandardScaler()
+        # MLR
+        print("MLR")
 
-  # MLR
-  print("MLR")
+        filtered_features = [col for col in features[0] if col in df.columns]
+        X = df[filtered_features]
+        X_train_mlr, X_test_mlr = X.iloc[:split_index], X.iloc[split_index:]
+        X_train_scaled_mlr = scaler.fit_transform(X_train_mlr)
+        X_test_scaled_mlr = scaler.transform(X_test_mlr)
 
-  filtered_features = [col for col in features[0] if col in df.columns]
-  X = df[filtered_features]
-  X_train_mlr, X_test_mlr = X.iloc[:split_index], X.iloc[split_index:]
-  X_train_scaled_mlr = scaler.fit_transform(X_train_mlr)
-  X_test_scaled_mlr = scaler.transform(X_test_mlr)
+        mlr = LinearRegression()
+        mlr.fit(X_train_scaled_mlr, y_train)
 
-  mlr = LinearRegression()
-  mlr.fit(X_train_scaled_mlr, y_train)
+        # SVR
+        print("SVR")
 
-  # SVR
-  print("SVR")
+        filtered_features = [col for col in features[1] if col in df.columns]
+        X = df[filtered_features]
+        X_train_svr, X_test_svr = X.iloc[:split_index], X.iloc[split_index:]
+        X_train_scaled_svr = scaler.fit_transform(X_train_svr)
+        X_test_scaled_svr = scaler.transform(X_test_svr)
 
-  filtered_features = [col for col in features[1] if col in df.columns]
-  X = df[filtered_features]
-  X_train_svr, X_test_svr = X.iloc[:split_index], X.iloc[split_index:]
-  X_train_scaled_svr = scaler.fit_transform(X_train_svr)
-  X_test_scaled_svr = scaler.transform(X_test_svr)
+        svr = SVR()
+        svr.fit(X_train_scaled_svr, y_train)
 
-  svr = SVR()
-  svr.fit(X_train_scaled_svr, y_train)
+        # LightGBM
+        print("LightGBM")
 
-  # LightGBM
-  print("LightGBM")
+        filtered_features = [col for col in features[2] if col in df.columns]
+        X = df[filtered_features]
+        X_train_lgb, X_test_lgb = X.iloc[:split_index], X.iloc[split_index:]
 
-  filtered_features = [col for col in features[2] if col in df.columns]
-  X = df[filtered_features]
-  X_train_lgb, X_test_lgb = X.iloc[:split_index], X.iloc[split_index:]
+        lgb_model = lgb.LGBMRegressor()
+        lgb_model.fit(X_train_lgb, y_train)
 
-  lgb_model = lgb.LGBMRegressor()
-  lgb_model.fit(X_train_lgb, y_train)
+        # MLP
+        print("MLP")
 
-  # MLP
-  print("MLP")
+        filtered_features = [col for col in features[3] if col in df.columns]
+        X = df[filtered_features]
+        X_train_mlp, X_test_mlp = X.iloc[:split_index], X.iloc[split_index:]
+        X_train_scaled_mlp = scaler.fit_transform(X_train_mlp)
+        X_test_scaled_mlp = scaler.transform(X_test_mlp)
 
-  filtered_features = [col for col in features[3] if col in df.columns]
-  X = df[filtered_features]
-  X_train_mlp, X_test_mlp = X.iloc[:split_index], X.iloc[split_index:]
-  X_train_scaled_mlp = scaler.fit_transform(X_train_mlp)
-  X_test_scaled_mlp = scaler.transform(X_test_mlp)
+        mlp = MLPRegressor(random_state=42, max_iter=1000)
+        mlp.fit(X_train_scaled_mlp, y_train)
 
-  mlp = MLPRegressor(random_state=42, max_iter=1000)
-  mlp.fit(X_train_scaled_mlp, y_train)
+        # 예측 결과를 t+1 위치에 저장
+        df_result = X_total.copy()
+        df_result.loc[:split_index - 1, 'pred_mlr'] = mlr.predict(X_train_scaled_mlr)
+        df_result.loc[split_index:, 'pred_mlr'] = mlr.predict(X_test_scaled_mlr)
+        df_result.loc[:split_index - 1, 'pred_svr'] = svr.predict(X_train_scaled_svr)
+        df_result.loc[split_index:, 'pred_svr'] = svr.predict(X_test_scaled_svr)
+        df_result.loc[:split_index - 1, 'pred_lgb'] = lgb_model.predict(X_train_lgb)
+        df_result.loc[split_index:, 'pred_lgb'] = lgb_model.predict(X_test_lgb)
+        df_result.loc[:split_index - 1, 'pred_mlp'] = mlp.predict(X_train_scaled_mlp)
+        df_result.loc[split_index:, 'pred_mlp'] = mlp.predict(X_test_scaled_mlp)
 
-  # 예측 결과를 t+1 위치에 저장
-  df_result = X_total.copy()
-  df_result.loc[:split_index-1, 'pred_mlr'] = mlr.predict(X_train_scaled_mlr)
-  df_result.loc[split_index:, 'pred_mlr'] = mlr.predict(X_test_scaled_mlr)
-  df_result.loc[:split_index-1, 'pred_svr'] = svr.predict(X_train_scaled_svr)
-  df_result.loc[split_index:, 'pred_svr'] = svr.predict(X_test_scaled_svr)
-  df_result.loc[:split_index-1, 'pred_lgb'] = lgb_model.predict(X_train_lgb)
-  df_result.loc[split_index:, 'pred_lgb'] = lgb_model.predict(X_test_lgb)
-  df_result.loc[:split_index-1, 'pred_mlp'] = mlp.predict(X_train_scaled_mlp)
-  df_result.loc[split_index:, 'pred_mlp'] = mlp.predict(X_test_scaled_mlp)
+        df_result['pred_mlr'] = df_result['pred_mlr'].shift(1)
+        df_result['pred_svr'] = df_result['pred_svr'].shift(1)
+        df_result['pred_lgb'] = df_result['pred_lgb'].shift(1)
+        df_result['pred_mlp'] = df_result['pred_mlp'].shift(1)
 
-  df_result['pred_mlr'] = df_result['pred_mlr'].shift(1)
-  df_result['pred_svr'] = df_result['pred_svr'].shift(1)
-  df_result['pred_lgb'] = df_result['pred_lgb'].shift(1)
-  df_result['pred_mlp'] = df_result['pred_mlp'].shift(1)
+        # 결과 추출
+        X_test_result = df_result.copy()
+        X_test_result.loc[:split_index - 1, 'Time'] = time_train.values
+        X_test_result.loc[split_index:, 'Time'] = time_test.values
+        X_test_result.dropna(subset=['pred_mlr', 'pred_svr', 'pred_lgb', 'pred_mlp'], inplace=True)
 
-  # 결과 추출
-  X_test_result = df_result.copy()
-  X_test_result.loc[:split_index-1,'Time'] = time_train.values
-  X_test_result.loc[split_index:,'Time'] = time_test.values
-  X_test_result.dropna(subset=['pred_mlr', 'pred_svr', 'pred_lgb', 'pred_mlp'], inplace=True)
+        forecasted_df_list.append(X_test_result)
 
-  forecasted_df_list.append(X_test_result)
+        joblib.dump(mlr, f"{path}/result_of_paper/ann/feature_selection/mlr_forecasting_model_{str(df_index)}.joblib")
+        joblib.dump(svr, f"{path}/result_of_paper/ann/feature_selection/svr_forecasting_model_{str(df_index)}.joblib")
+        lgb_model.booster_.save_model(
+            f"{path}/result_of_paper/ann/feature_selection/lgb_forecasting_model_{str(df_index)}.txt")
+        joblib.dump(mlp, f"{path}/result_of_paper/ann/feature_selection/mlp_forecasting_model_{str(df_index)}.joblib")
+    result_for_reforecast_df_list = []
+    for site_num, forecasted_df in zip([1, 2, 4, 5, 6, 7, 8], forecasted_df_list):
+        for model in ['mlr', 'svr', 'lgb', 'mlp']:
+            forecasted_df[f'pred_{model}'] = forecasted_df[f'pred_{model}'].apply(lambda x: max(x, 0))
+            forecasted_df[f'error_{model}'] = forecasted_df.apply(
+                lambda row: (row[f'pred_{model}'] - row['Power (MW)']),
+                axis=1
+            )
 
-  joblib.dump(mlr, f"{path}/result_of_paper/ann/feature_selection/mlr_forecasting_model_{str(df_index)}.joblib")
-  joblib.dump(svr, f"{path}/result_of_paper/ann/feature_selection/svr_forecasting_model_{str(df_index)}.joblib")
-  lgb_model.booster_.save_model(f"{path}/result_of_paper/ann/feature_selection/lgb_forecasting_model_{str(df_index)}.txt")
-  joblib.dump(mlp, f"{path}/result_of_paper/ann/feature_selection/mlp_forecasting_model_{str(df_index)}.joblib")
+        result_for_reforecast_df_list.append(forecasted_df)
 
-result_for_reforecast_df_list=[]
-for site_num, forecasted_df in zip([1,2,4,5,6,7,8], forecasted_df_list):
-  for model in ['mlr', 'svr', 'lgb', 'mlp']:
-    forecasted_df[f'pred_{model}'] = forecasted_df[f'pred_{model}'].apply(lambda x: max(x, 0))
-    forecasted_df[f'error_{model}'] = forecasted_df.apply(
-        lambda row: (row[f'pred_{model}'] - row['Power (MW)']),
-        axis=1
-    )
-
-  result_for_reforecast_df_list.append(forecasted_df)
-#%%
-a = [1,2,4,5,6,7,8]
-operation_hours_array = [
-  ('06:00', '21:30'),
-  ('00:00', '23:59'),
-  ('00:00', '23:59'),
-  ('00:00', '23:59'),
-  ('06:00', '21:00'),
-  ('06:00', '21:00'),
-  ('06:00', '19:00')
-]
-
-filtered_df_list = []
-for final_result_df, df_index in zip(result_for_reforecast_df_list, a):
-  final_result_df.to_csv(f"{path}/result_of_paper/ann/feature_selection/forecast_result_{df_index}_.csv", index=False)
-
-for df,(start_str, end_str) in zip(result_for_reforecast_df_list, operation_hours_array):
-  split_index = int(len(df) * (1 - test_size))
-  df_copy = df.iloc[split_index:].copy()
-  df_copy['Time'] = pd.to_datetime(df_copy['Time'])
-
-  start_time = time.fromisoformat(start_str)
-  end_time = time.fromisoformat(end_str)
-
-  df_copy = df_copy[df_copy['Time'].dt.time.between(start_time, end_time)]
-  filtered_df_list.append(df_copy)
+    return result_for_reforecast_df_list
 
 
-for result_df, df_index in zip(filtered_df_list, a):
-  print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-  print(df_index)
+# %%
+def save_forecast_result(result_for_reforecast_df_list, site_names):
+    for final_result_df, df_index in zip(result_for_reforecast_df_list, site_names):
+        final_result_df.to_csv(f"{path}/result_of_paper/ann/feature_selection/forecast_result_{df_index}_.csv",
+                               index=False)
 
-  for forecast_model in ['mlr','svr','lgb', 'mlp']:
-    print(f'reforecast model : {forecast_model.upper()}')
 
-    mse = (result_df[f'error_{forecast_model}']** 2).mean()
-    mae = result_df[f'error_{forecast_model}'].abs().mean()
-    rmse = np.sqrt(mse)
+def filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array):
+    filtered_df_list = []
 
-    print(f"MAE: {mae}")
-    print(f"MSE: {mse}")
-    print(f"RMSE: {rmse}")
+    for df, (start_str, end_str) in zip(result_for_reforecast_df_list, operation_hours_array):
+        split_index = int(len(df) * (1 - test_size))
+        df_copy = df.iloc[split_index:].copy()
+        df_copy['Time'] = pd.to_datetime(df_copy['Time'])
+
+        start_time = time.fromisoformat(start_str)
+        end_time = time.fromisoformat(end_str)
+
+        df_copy = df_copy[df_copy['Time'].dt.time.between(start_time, end_time)]
+        filtered_df_list.append(df_copy)
+
+    return filtered_df_list
+
+
+def print_out_forecast_eval(filtered_df_list, site_names):
+    for result_df, df_index in zip(filtered_df_list, site_names):
+        print(
+            '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        print(df_index)
+
+        for forecast_model in ['mlr', 'svr', 'lgb', 'mlp']:
+            print(f'reforecast model : {forecast_model.upper()}')
+
+            mse = (result_df[f'error_{forecast_model}'] ** 2).mean()
+            mae = result_df[f'error_{forecast_model}'].abs().mean()
+            rmse = np.sqrt(mse)
+
+            print(f"MAE: {mae}")
+            print(f"MSE: {mse}")
+            print(f"RMSE: {rmse}")
+
+result_for_reforecast_df_list = do_forecast(df_list, site_names, features_list)
+save_forecast_result(result_for_reforecast_df_list, site_names)
+filtered_df_list = filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array)
+print_out_forecast_eval()
