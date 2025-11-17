@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 # %%
-path = '/content/gdrive/MyDrive/reforecast'
+path = './dataset'
 datasets_path = path + '/dataset/solar_stations'
 # %%
 files = [os.path.join(path + '/lag_added_dataset', file) for file in os.listdir(path + '/lag_added_dataset') if
