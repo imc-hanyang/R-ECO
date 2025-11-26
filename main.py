@@ -57,10 +57,6 @@ def validate_lengths(site_names, operation_hours_array, feature_added_df_list):
         raise ValueError("site_names와 feature_added_df_list의 길이는 같아야 합니다.")
     if len(operation_hours_array) != len(feature_added_df_list):
         raise ValueError("operation_hours_array와 feature_added_df_list의 길이는 같아야 합니다.")
-    if len(forecast_models) != len(reforecast_models):
-        raise ValueError("forecast_models와 reforecast_models의 길이는 같아야 합니다.")
-    if len(forecast_models) != len(site_names):
-        raise ValueError("forecast_models와 site_names의 길이는 같아야 합니다.")
 
 
 def main():
@@ -79,7 +75,7 @@ def main():
     files, df_list = get_raw_df(datasets_path)
     feature_added_df_list = delete_nulls_and_add_time_column(df_list, files)
     save_feature_add_df_list(feature_added_df_list, feature_added_df_list, path, site_names)
-    print(f" 첫 번째 사이트 DataFrame의 컬럼 목록 : {feature_added_df_list[0].columns()}")
+    print(f" 첫 번째 사이트 DataFrame의 컬럼 목록 : {feature_added_df_list[0].columns}")
 
     # 사이트 이름, 운전 시간대, 전처리된 DataFrame 리스트의 길이 일관성 검증
     # 전처리된 데이터(lag/feature 추가된 CSV)를 다시 로드해서 사용
@@ -95,17 +91,6 @@ def main():
     do_reforecast_and_evaluate(reforecast_targets, reforecast_shifted_targets, reforecast_features_list, site_names,
                                forecasted_df_list, operation_hours_array, test_size, path, reforecast_models, target)
 
-    best_model_tuples = [
-        ('svr', 'svr'),
-        ('lgb', 'svr'),
-        ('mlr', 'svr'),
-        ('mlr', 'svr'),
-        ('mlr', 'svr'),
-        ('mlr', 'svr'),
-        ('lgb', 'svr')
-    ]  # set best model for each site
-    if len(best_model_tuples) != len(site_names):
-        raise ValueError("best_model_tupless와 site_names의 길이는 같아야 합니다.")
 
     do_reforecast_train_shap(path, reforecast_models, forecast_models, test_size, site_names, reforecast_targets,
                              reforecast_shifted_targets)
