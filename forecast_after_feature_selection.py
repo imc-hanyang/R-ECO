@@ -1,52 +1,12 @@
-# %%
-import os
-import pandas as pd
-
-# %%
-path = './dataset'
-datasets_path = path + '/dataset/solar_stations'
-# %%
-mlr_files = sorted(
-    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
-     file.endswith('.csv') and 'mlr' in file and 'forecast' in file])
-svr_files = sorted(
-    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
-     file.endswith('.csv') and 'svr' in file and 'forecast' in file])
-lgb_files = sorted(
-    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
-     file.endswith('.csv') and 'lgb' in file and 'forecast' in file])
-mlp_files = sorted(
-    [os.path.join(path + '/result_of_paper/ann/', file) for file in os.listdir(path + '/result_of_paper/ann/') if
-     file.endswith('.csv') and 'mlp' in file and 'forecast' in file])
-
-df_list = []
-site_names = [1, 2, 4, 5, 6, 7, 8]
-operation_hours_array = [
-    ('06:00', '21:30'),
-    ('00:00', '23:59'),
-    ('00:00', '23:59'),
-    ('00:00', '23:59'),
-    ('06:00', '21:00'),
-    ('06:00', '21:00'),
-    ('06:00', '19:00')
-]
-for df_index in [1, 2, 4, 5, 6, 7, 8]:
-    df_list.append(pd.read_csv(f'{path}/result_of_paper/ann/forecast_result_{str(df_index)}_.csv'))
-
-# %%
-
-# %%
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.svm import SVR
-from sklearn.metrics import mean_squared_error, r2_score
+from datetime import time
+import joblib
 import lightgbm as lgb
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 import numpy as np
-import math
-
-test_size = 2 / 24
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR
 
 # mlr forcecast reforecast features
 site1_features_mlr_forecast = ['Power (MW)', 'lag_2', 'lag_1', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'lag_8']
@@ -127,17 +87,9 @@ site8_features_list = [site8_features_mlr_forecast, site8_features_svr_forecast,
 features_list = [site1_features_list, site2_features_list, site4_features_list, site5_features_list,
                  site6_features_list, site7_features_list, site8_features_list]
 
-target = 'Power (MW)'
-shifted_target = 'power_shifted'
 
-# %%
-import joblib
-import numpy as np
-from datetime import time
-from sklearn.neural_network import MLPRegressor
-
-
-def do_forecast(df_list, site_names, features_list):
+def do_forecast(df_list: list, site_names: list, features_list: list, target: str, shifted_target: str,
+                forecast_models:list, test_size: float, path: str):
     forecasted_df_list = []
     for df, df_index, features in zip(df_list, site_names, features_list):
         print('----------------------------------------------------------------------------------------------')
@@ -229,17 +181,17 @@ def do_forecast(df_list, site_names, features_list):
 
         forecasted_df_list.append(X_test_result)
 
-        joblib.dump(mlr, f"{path}/result_of_paper/ann/feature_selection/mlr_forecasting_model_{str(df_index)}.joblib")
-        joblib.dump(svr, f"{path}/result_of_paper/ann/feature_selection/svr_forecasting_model_{str(df_index)}.joblib")
+        joblib.dump(mlr, f"{path}/result_of_paper/feature_selection/forecast/mlr_forecasting_model_{str(df_index)}.joblib")
+        joblib.dump(svr, f"{path}/result_of_paper/feature_selection//forecast/svr_forecasting_model_{str(df_index)}.joblib")
         lgb_model.booster_.save_model(
-            f"{path}/result_of_paper/ann/feature_selection/lgb_forecasting_model_{str(df_index)}.txt")
-        joblib.dump(mlp, f"{path}/result_of_paper/ann/feature_selection/mlp_forecasting_model_{str(df_index)}.joblib")
+            f"{path}/result_of_paper/feature_selection/forecast/lgb_forecasting_model_{str(df_index)}.txt")
+        joblib.dump(mlp, f"{path}/result_of_paper/feature_selection/forecast/mlp_forecasting_model_{str(df_index)}.joblib")
     result_for_reforecast_df_list = []
-    for site_num, forecasted_df in zip([1, 2, 4, 5, 6, 7, 8], forecasted_df_list):
-        for model in ['mlr', 'svr', 'lgb', 'mlp']:
+    for site_num, forecasted_df in zip(site_names, forecasted_df_list):
+        for model in forecast_models:
             forecasted_df[f'pred_{model}'] = forecasted_df[f'pred_{model}'].apply(lambda x: max(x, 0))
             forecasted_df[f'error_{model}'] = forecasted_df.apply(
-                lambda row: (row[f'pred_{model}'] - row['Power (MW)']),
+                lambda row: (row[f'pred_{model}'] - row[target]),
                 axis=1
             )
 
@@ -248,14 +200,13 @@ def do_forecast(df_list, site_names, features_list):
     return result_for_reforecast_df_list
 
 
-# %%
-def save_forecast_result(result_for_reforecast_df_list, site_names):
+def save_forecast_result(result_for_reforecast_df_list: list, site_names: list, path: str):
     for final_result_df, df_index in zip(result_for_reforecast_df_list, site_names):
-        final_result_df.to_csv(f"{path}/result_of_paper/ann/feature_selection/forecast_result_{df_index}_.csv",
+        final_result_df.to_csv(f"{path}/result_of_paper/feature_selection/forecast/forecast_result_{df_index}_.csv",
                                index=False)
 
 
-def filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array):
+def filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array, test_size: float):
     filtered_df_list = []
 
     for df, (start_str, end_str) in zip(result_for_reforecast_df_list, operation_hours_array):
@@ -272,13 +223,13 @@ def filter_forecast_result_by_operation_times(result_for_reforecast_df_list, ope
     return filtered_df_list
 
 
-def print_out_forecast_eval(filtered_df_list, site_names):
+def print_out_forecast_eval(filtered_df_list, site_names, forecast_models: list):
     for result_df, df_index in zip(filtered_df_list, site_names):
         print(
             '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         print(df_index)
 
-        for forecast_model in ['mlr', 'svr', 'lgb', 'mlp']:
+        for forecast_model in forecast_models:
             print(f'reforecast model : {forecast_model.upper()}')
 
             mse = (result_df[f'error_{forecast_model}'] ** 2).mean()
@@ -289,7 +240,15 @@ def print_out_forecast_eval(filtered_df_list, site_names):
             print(f"MSE: {mse}")
             print(f"RMSE: {rmse}")
 
-result_for_reforecast_df_list = do_forecast(df_list, site_names, features_list)
-save_forecast_result(result_for_reforecast_df_list, site_names)
-filtered_df_list = filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array)
-print_out_forecast_eval()
+
+def do_forecast_after_feature_selection(site_names: list, path: str, operation_hours_array: list, test_size: float,
+                                        target: str, shifted_target: str, forecast_models: list):
+    df_list = []
+    for df_index in site_names:
+        df_list.append(pd.read_csv(f'{path}/lag_added_dataset/f"{str(df_index)}.csv'))
+    result_for_reforecast_df_list = do_forecast(df_list, site_names, features_list, target, shifted_target,forecast_models,
+                                                test_size, path)
+    save_forecast_result(result_for_reforecast_df_list, site_names, path)
+    filtered_df_list = filter_forecast_result_by_operation_times(result_for_reforecast_df_list, operation_hours_array,
+                                                                 test_size)
+    print_out_forecast_eval(filtered_df_list, site_names, forecast_models)

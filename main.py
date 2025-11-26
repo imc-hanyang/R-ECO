@@ -6,10 +6,12 @@ PV 발전량 예측 및 재예측 전체 파이프라인을 실행하는 메인 
 - 재예측(Reforecast) 실행 및 평가
 """
 from SHAP import do_reforecast_train_shap, do_forecast_train_shap
+from forecast_after_feature_selection import do_forecast_after_feature_selection
 from forecast_reforecast import get_feature_added_dataframe, do_forecast_and_evaluate, \
     create_reforecast_features_and_targets, do_reforecast_and_evaluate
 from handle_data_with_preprocessing import save_feature_add_df_list, get_raw_df, delete_nulls_and_add_time_column
 from feature_lists import forecast_features
+from reforecast_after_feature_selection import do_reforecast_and_evaluate_and_save
 
 # 전처리 및 결과 저장에 사용할 기본 경로 설정
 path = './dataset'
@@ -74,9 +76,9 @@ def main():
         6. 재예측(Reforecast)에 필요한 피처/타깃 정보 생성.
         7. 재예측 수행 및 평가 출력.
     """
-    df_list = get_raw_df(datasets_path)
-    feature_added_df_list = delete_nulls_and_add_time_column(df_list)
-    save_feature_add_df_list(feature_added_df_list)
+    files, df_list = get_raw_df(datasets_path)
+    feature_added_df_list = delete_nulls_and_add_time_column(df_list, files)
+    save_feature_add_df_list(feature_added_df_list, feature_added_df_list, path, site_names)
     print(f" 첫 번째 사이트 DataFrame의 컬럼 목록 : {feature_added_df_list[0].columns()}")
 
     # 사이트 이름, 운전 시간대, 전처리된 DataFrame 리스트의 길이 일관성 검증
@@ -85,13 +87,13 @@ def main():
     validate_lengths(site_names, operation_hours_array, feature_added_df_list)
     feature_added_df_list = get_feature_added_dataframe(path)
     forecasted_df_list = do_forecast_and_evaluate(path, forecast_features, target, shifted_target, test_size,
-                                                  feature_added_df_list, site_names, operation_hours_array)
+                                                  feature_added_df_list, site_names, operation_hours_array, forecast_models)
 
     # 재예측(Reforecast)에 필요한 피처/타깃/시프트 타깃 정보 생성
     # 재예측 수행 및 평가
     reforecast_features_list, reforecast_targets, reforecast_shifted_targets = create_reforecast_features_and_targets()
     do_reforecast_and_evaluate(reforecast_targets, reforecast_shifted_targets, reforecast_features_list, site_names,
-                               forecasted_df_list, operation_hours_array, test_size, path)
+                               forecasted_df_list, operation_hours_array, test_size, path, reforecast_models, target)
 
     best_model_tuples = [
         ('svr', 'svr'),
@@ -108,6 +110,10 @@ def main():
     do_reforecast_train_shap(path, reforecast_models, forecast_models, test_size, site_names, reforecast_targets,
                              reforecast_shifted_targets)
     do_forecast_train_shap(path, forecast_models, test_size, site_names, target, shifted_target)
+
+    do_forecast_after_feature_selection(site_names, path, operation_hours_array, test_size, target, shifted_target, forecast_models)
+    do_reforecast_and_evaluate_and_save(path, forecast_models, reforecast_targets, reforecast_shifted_targets, site_names,
+                                        test_size, operation_hours_array, reforecast_models, target)
 
 
 if __name__ == "__main__":

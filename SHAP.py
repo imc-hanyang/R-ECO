@@ -422,7 +422,7 @@ def do_forecast_train_shap(path: str, forecast_models: list, test_size: float, s
     Returns:
         None
     """
-    files = sorted([os.path.join(path+'/result_of_paper/forecast/', file) for file in os.listdir(path+'/result_of_paper/forecast/') if file.endswith('.csv') and 'mlr' in file])
+    files = sorted([os.path.join(path+'/result_of_paper/forecast/', file) for file in os.listdir(path+'/result_of_paper/forecast/') if file.endswith('.csv')])
 
     df_list = []
     for file in files:

@@ -61,7 +61,7 @@ def get_feature_added_dataframe(path: str) -> list:
 
 
 def do_base_forecast(origin_df_list: list, site_names: list, features: list, target: str, shifted_column: str,
-                     test_size: float, path: str):
+                     test_size: float, path: str, forecast_models:list):
     """
     MLR, SVR, LightGBM, MLP 네 가지 모델로 기본 예측(Base Forecast)을 수행하는 함수.
 
@@ -82,6 +82,7 @@ def do_base_forecast(origin_df_list: list, site_names: list, features: list, tar
         shifted_column (str): 다음 시점 타깃을 저장할 컬럼명.
         test_size (float): 테스트 데이터 비율 (0~1 사이).
         path (str): 모델 및 결과를 저장할 상위 디렉터리 경로.
+        forecast_models: forecast_models
 
     Returns:
         list: 예측값(pred_*)과 오차(error_*)가 포함된 DataFrame 리스트.
@@ -166,7 +167,7 @@ def do_base_forecast(origin_df_list: list, site_names: list, features: list, tar
     # 오차(error) 계산 및 결과 리스트 구성
     result_for_reforecast_df_list = []
     for forecasted_df in forecasted_df_list:
-        for model in ['mlr', 'svr', 'lgb', 'mlp']:
+        for model in forecast_models:
             # 음수 예측값을 0 이상으로 클리핑
             forecasted_df[f'pred_{model}'] = forecasted_df[f'pred_{model}'].apply(lambda x: max(x, 0))
             # 예측 오차 = 예측값 - 실제값
@@ -231,7 +232,7 @@ def filter_by_operation_hours(result_for_reforecast_df_list: list, operation_hou
     return filtered_df_list
 
 
-def print_out_forecast_eval_result(filtered_df_list, site_names):
+def print_out_forecast_eval_result(filtered_df_list:list, site_names:list, forecast_models:list):
     """
     기본 예측(Base Forecast)에 대한 성능 평가 지표를 출력하는 함수.
 
@@ -241,6 +242,7 @@ def print_out_forecast_eval_result(filtered_df_list, site_names):
     Args:
         filtered_df_list (list): 운전 시간대로 필터링된 DataFrame 리스트.
         site_names (list): 각 DataFrame에 대응되는 사이트 이름 리스트.
+        forecast_models: forecast_models
 
     Returns:
         None
@@ -250,7 +252,7 @@ def print_out_forecast_eval_result(filtered_df_list, site_names):
             '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         print(df_index)
 
-        for forecast_model in ['mlr', 'svr', 'lgb', 'mlp']:
+        for forecast_model in forecast_models:
             print(f'reforecast model : {forecast_model.upper()}')
 
             mse = (result_df[f'error_{forecast_model}'] ** 2).mean()
@@ -263,7 +265,7 @@ def print_out_forecast_eval_result(filtered_df_list, site_names):
 
 
 def do_forecast_and_evaluate(path: str, features: list, target: str, shifted_target: str, test_size: float,
-                             origin_df_list: list, site_names: list, operation_hours_array: list) -> list:
+                             origin_df_list: list, site_names: list, operation_hours_array: list, forecast_models:list) -> list:
     """
     전체 base forecast 파이프라인을 실행하고 평가까지 수행하는 함수.
 
@@ -282,15 +284,16 @@ def do_forecast_and_evaluate(path: str, features: list, target: str, shifted_tar
         origin_df_list (list): 전처리 완료된 원본 DataFrame 리스트.
         site_names (list): 사이트 이름 리스트.
         operation_hours_array (list): 운전 시간대 정보 리스트.
+        forecast_models: forecast_models
 
     Returns:
         list: 운전 시간대 기준으로 필터링된 결과 DataFrame 리스트.
     """
     result_for_reforecast_df_list = do_base_forecast(origin_df_list, site_names, features, target, shifted_target,
-                                                     test_size, path)
+                                                     test_size, path, forecast_models)
     save_forecast_result(result_for_reforecast_df_list, site_names, path)
     filtered_df_list = filter_by_operation_hours(result_for_reforecast_df_list, operation_hours_array, test_size)
-    print_out_forecast_eval_result(filtered_df_list, site_names)
+    print_out_forecast_eval_result(filtered_df_list, site_names, forecast_models)
 
     return filtered_df_list
 
@@ -324,7 +327,7 @@ def create_reforecast_features_and_targets() -> (list, list, list):
 
 
 def do_reforecast(targets: list, shifted_targets: list, features_list: list, site_names: list,
-                  result_for_reforecast_df_list: list, test_size: float, path: str):
+                  result_for_reforecast_df_list: list, reforecast_models:list, test_size: float, path: str):
     """
     base forecast에서 얻은 오차를 재예측(Reforecast)하여
     보정된 PV 발전량을 계산하고 저장하는 함수.
@@ -344,6 +347,8 @@ def do_reforecast(targets: list, shifted_targets: list, features_list: list, sit
         result_for_reforecast_df_list (list): base forecast 결과 DataFrame 리스트.
         test_size (float): 테스트 비율.
         path (str): 모델 및 결과 저장 경로.
+        reforecast_models: forecast models
+
 
     Returns:
         list: 각 forecast 모델별 최종 재예측 결과 DataFrame 리스트 목록 (길이 4의 리스트).
@@ -351,7 +356,7 @@ def do_reforecast(targets: list, shifted_targets: list, features_list: list, sit
     final_result_lists = [[], [], [], []]
 
     for forecast_model, target, shifted_target, final_result_list, features in zip(
-            ['mlr', 'svr', 'lgb', 'mlp'],
+            reforecast_models,
             targets,
             shifted_targets,
             final_result_lists,
@@ -457,14 +462,14 @@ def do_reforecast(targets: list, shifted_targets: list, features_list: list, sit
 
         # 각 사이트별 최종 재예측 결과를 CSV로 저장
         for final_result_df, df_index in zip(final_result_list, site_names):
-            final_result_df.to_csv(f"{path}/result_of_paper/reforecast/{forecast_model}_{df_index}_.csv",
+            final_result_df.to_csv(f"{path}/result_of_paper/reforecast/{forecast_model}_{df_index}.csv",
                                    index=False)
 
     return final_result_lists
 
 
 def print_out_reforecast_eval(final_result_lists: list, operation_hours_array: list, site_names: list,
-                              test_size: float):
+                              test_size: float, reforecast_models: list, forecast_target: str ):
     """
     재예측(Reforecast) 결과에 대한 성능 평가 지표를 출력하는 함수.
 
@@ -478,11 +483,13 @@ def print_out_reforecast_eval(final_result_lists: list, operation_hours_array: l
         operation_hours_array (list): 각 사이트별 운전 시간대 정보 리스트.
         site_names (list): 사이트 이름 리스트.
         test_size (float): 테스트 비율 (시계열 분할 기준 유지용).
+        reforecast_models: forecast_models
+        forecast_target: forecast_target
 
     Returns:
         None
     """
-    for forecast_model, final_result_list in zip(['mlr', 'svr', 'lgb', 'mlp'], final_result_lists):
+    for forecast_model, final_result_list in zip(reforecast_models, final_result_lists):
         print(
             '================================================================================================================')
         print(f'forecast model : {forecast_model.upper()}')
@@ -507,11 +514,11 @@ def print_out_reforecast_eval(final_result_lists: list, operation_hours_array: l
                     '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
                 print(df_index)
 
-                for reforecast_model in ['mlr', 'svr', 'lgb', 'mlp']:
+                for reforecast_model in reforecast_models:
                     print(f'reforecast model : {reforecast_model.upper()}')
 
-                    mse = ((result_df['Power (MW)'] - result_df[f'reforecasted_PV_{reforecast_model}']) ** 2).mean()
-                    mae = (result_df['Power (MW)'] - result_df[f'reforecasted_PV_{reforecast_model}']).abs().mean()
+                    mse = ((result_df[forecast_target] - result_df[f'reforecasted_PV_{reforecast_model}']) ** 2).mean()
+                    mae = (result_df[forecast_target] - result_df[f'reforecasted_PV_{reforecast_model}']).abs().mean()
                     rmse = np.sqrt(mse)
 
                     print(f"MAE: {mae}")
@@ -521,7 +528,7 @@ def print_out_reforecast_eval(final_result_lists: list, operation_hours_array: l
 
 def do_reforecast_and_evaluate(targets: list, shifted_targets: list, features_list: list, site_names: list,
                                result_for_reforecast_df_list: list, operation_hours_array: list, test_size: float,
-                               path: str):
+                               path: str, reforecast_models:list, forecast_target: str):
     """
     전체 재예측(Reforecast) 및 평가 파이프라인을 실행하는 함수.
 
@@ -538,10 +545,12 @@ def do_reforecast_and_evaluate(targets: list, shifted_targets: list, features_li
         operation_hours_array (list): 각 사이트별 운전 시간대 리스트.
         test_size (float): 테스트 비율.
         path (str): 결과 저장 경로.
+        reforecast_models: reforecast_models
+        forecast_target: forecast_target
 
     Returns:
         None
     """
     final_result_lists = do_reforecast(targets, shifted_targets, features_list, site_names,
-                                       result_for_reforecast_df_list, test_size, path)
-    print_out_reforecast_eval(final_result_lists, operation_hours_array, site_names, test_size)
+                                       result_for_reforecast_df_list, reforecast_models, test_size, path)
+    print_out_reforecast_eval(final_result_lists, operation_hours_array, site_names, test_size, reforecast_models, forecast_target)

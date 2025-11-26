@@ -301,7 +301,7 @@ def add_lag_columns(feature_added_df_list: list, target_column: str) -> list:
     return lag_added_df_list
 
 
-def save_feature_add_df_list(files: list, feature_added_df_list: list, path: str) -> None:
+def save_feature_add_df_list(files: list, feature_added_df_list: list, path: str, site_names:list) -> None:
     """
     피처가 추가된 DataFrame 리스트를 CSV 파일로 저장하는 함수.
 
@@ -313,12 +313,13 @@ def save_feature_add_df_list(files: list, feature_added_df_list: list, path: str
         files (list): 각 DataFrame에 대응되는 원본 파일 경로 리스트.
         feature_added_df_list (list): 최종 피처가 추가된 DataFrame 리스트.
         path (str): CSV를 저장할 상위 디렉터리 경로.
+        site_names( list): 사이트 이름들
 
     Returns:
         None
     """
-    for file, df in zip(files, feature_added_df_list):
-        file_name = file.split("/")[-1].replace(".csv", "")
+    for file, df, site_name in zip(files, feature_added_df_list, site_names):
+        file_name = f"{str(site_name)}.csv"
         print(f"saving {file_name}...")
         df.to_csv(path + "/lag_added_dataset/" + file_name, index=False)
 
