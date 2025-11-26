@@ -5,7 +5,7 @@ PV 발전량 예측 및 재예측 전체 파이프라인을 실행하는 메인 
 - 기본 예측(Base forecast) 실행 및 평가
 - 재예측(Reforecast) 실행 및 평가
 """
-
+from SHAP import do_reforecast_train_shap, do_forecast_train_shap
 from forecast_reforecast import get_feature_added_dataframe, do_forecast_and_evaluate, \
     create_reforecast_features_and_targets, do_reforecast_and_evaluate
 from handle_data_with_preprocessing import save_feature_add_df_list, get_raw_df, delete_nulls_and_add_time_column
@@ -16,9 +16,14 @@ path = './dataset'
 datasets_path = path + '/dataset/solar_stations'
 # 테스트 데이터 비율 (여기서는 2개월 / 24개월)
 test_size = 2 / 24
+target = "Power (MW)"
+shifted_target = 'power_shifted'
 
 # 사용할 사이트(발전소) ID 리스트 (예: 1,2,4,5,6,7,8번 사이트)
 site_names = [1, 2, 4, 5, 6, 7, 8]  # set selected df's site name e.g. ['first']
+
+forecast_models = ['mlr', 'svr', 'lgb', 'mlp']
+reforecast_models = ['mlr', 'svr', 'lgb', 'mlp']
 
 # 각 사이트별 운전 시간대(Operation hours) 설정 (시작시각, 종료시각)
 operation_hours_array = [
@@ -50,6 +55,10 @@ def validate_lengths(site_names, operation_hours_array, feature_added_df_list):
         raise ValueError("site_names와 feature_added_df_list의 길이는 같아야 합니다.")
     if len(operation_hours_array) != len(feature_added_df_list):
         raise ValueError("operation_hours_array와 feature_added_df_list의 길이는 같아야 합니다.")
+    if len(forecast_models) != len(reforecast_models):
+        raise ValueError("forecast_models와 reforecast_models의 길이는 같아야 합니다.")
+    if len(forecast_models) != len(site_names):
+        raise ValueError("forecast_models와 site_names의 길이는 같아야 합니다.")
 
 
 def main():
@@ -75,7 +84,7 @@ def main():
     # 기본 예측(Base forecast) 수행 및 평가
     validate_lengths(site_names, operation_hours_array, feature_added_df_list)
     feature_added_df_list = get_feature_added_dataframe(path)
-    forecasted_df_list = do_forecast_and_evaluate(path, forecast_features, "Power (MW)", 'power_shifted', test_size,
+    forecasted_df_list = do_forecast_and_evaluate(path, forecast_features, target, shifted_target, test_size,
                                                   feature_added_df_list, site_names, operation_hours_array)
 
     # 재예측(Reforecast)에 필요한 피처/타깃/시프트 타깃 정보 생성
@@ -83,6 +92,22 @@ def main():
     reforecast_features_list, reforecast_targets, reforecast_shifted_targets = create_reforecast_features_and_targets()
     do_reforecast_and_evaluate(reforecast_targets, reforecast_shifted_targets, reforecast_features_list, site_names,
                                forecasted_df_list, operation_hours_array, test_size, path)
+
+    best_model_tuples = [
+        ('svr', 'svr'),
+        ('lgb', 'svr'),
+        ('mlr', 'svr'),
+        ('mlr', 'svr'),
+        ('mlr', 'svr'),
+        ('mlr', 'svr'),
+        ('lgb', 'svr')
+    ]  # set best model for each site
+    if len(best_model_tuples) != len(site_names):
+        raise ValueError("best_model_tupless와 site_names의 길이는 같아야 합니다.")
+
+    do_reforecast_train_shap(path, reforecast_models, forecast_models, test_size, site_names, reforecast_targets,
+                             reforecast_shifted_targets)
+    do_forecast_train_shap(path, forecast_models, test_size, site_names, target, shifted_target)
 
 
 if __name__ == "__main__":
