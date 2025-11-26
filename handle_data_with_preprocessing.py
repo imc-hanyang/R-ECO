@@ -45,7 +45,7 @@ def get_raw_df(datasets_path: str) -> (list, list):
     return files, df_list
 
 
-def delete_nulls_and_add_time_column(df_list: list, files: list) -> list:
+def delete_nulls_and_add_time_column(df_list: list, files: list, target:str) -> list:
     """
     결측치를 확인하고, 일부 결측치를 보간해서 제거한 뒤
     시간 관련 피처와 추가 피처들을 생성하는 함수.
@@ -58,13 +58,14 @@ def delete_nulls_and_add_time_column(df_list: list, files: list) -> list:
     Args:
         df_list (list): 원시 데이터를 담고 있는 DataFrame 리스트.
         files (list): 각 DataFrame에 대응되는 원본 파일 경로 리스트.
+        target: target
 
     Returns:
         list: 시간/주간/lag 피처가 모두 추가된 DataFrame 리스트.
     """
     check_nulls(df_list, files)
     delete_nulls(df_list)
-    return add_columns(df_list)
+    return add_columns(df_list, target)
 
 
 def check_nulls(df_list: list, files: list) -> None:
@@ -100,17 +101,19 @@ def delete_nulls(df_list: list) -> None:
     Returns:
         None
     """
-    # 결측치를 포함하는 행 출력
-    print(df_list[2][df_list[2].isna().any(axis=1)])
+    if len(df_list) > 2:
+        print("Deleting nulls in df_list[2]...")
+        # 결측치를 포함하는 행 출력
+        print(df_list[2][df_list[2].isna().any(axis=1)])
 
-    # 선형 보간으로 결측치 채우기 (원본 DataFrame을 직접 수정)
-    df_list[2].interpolate(method="linear", inplace=True)
+        # 선형 보간으로 결측치 채우기 (원본 DataFrame을 직접 수정)
+        df_list[2].interpolate(method="linear", inplace=True)
 
-    # 보간 후 결측치 개수 확인
-    print(df_list[2].isna().sum())
+        # 보간 후 결측치 개수 확인
+        print(df_list[2].isna().sum())
 
 
-def add_columns(df_list: list) -> list:
+def add_columns(df_list: list, target:str) -> list:
     """
     시간 관련 피처, 최근 1주일 통계 피처, lag 피처를 순차적으로 추가하는 함수.
 
@@ -121,13 +124,14 @@ def add_columns(df_list: list) -> list:
 
     Args:
         df_list (list): 원시 또는 전처리된 DataFrame 리스트.
+        target: target
 
     Returns:
         list: 모든 시간/통계/lag 피처가 추가된 DataFrame 리스트.
     """
     add_time_columns(df_list)
     feature_added_df_list = add_week_time_columns(df_list)
-    return add_lag_columns(feature_added_df_list)
+    return add_lag_columns(feature_added_df_list, target)
 
 
 def add_time_columns(df_list: list) -> None:

@@ -15,7 +15,7 @@ from reforecast_after_feature_selection import do_reforecast_and_evaluate_and_sa
 
 # 전처리 및 결과 저장에 사용할 기본 경로 설정
 path = './dataset'
-datasets_path = path + '/dataset/solar_stations'
+datasets_path = path + '/solar_stations'
 # 테스트 데이터 비율 (여기서는 2개월 / 24개월)
 test_size = 2 / 24
 target = "Power (MW)"
@@ -23,6 +23,7 @@ shifted_target = 'power_shifted'
 
 # 사용할 사이트(발전소) ID 리스트 (예: 1,2,4,5,6,7,8번 사이트)
 site_names = [1, 2, 4, 5, 6, 7, 8]  # set selected df's site name e.g. ['first']
+# site_names = [1]  # debug code
 
 forecast_models = ['mlr', 'svr', 'lgb', 'mlp']
 reforecast_models = ['mlr', 'svr', 'lgb', 'mlp']
@@ -37,6 +38,9 @@ operation_hours_array = [
     ('06:00', '21:00'),
     ('06:00', '19:00')
 ]
+# operation_hours_array = [
+#     ('06:00', '21:30')
+# ]# debug code
 
 
 def validate_lengths(site_names, operation_hours_array, feature_added_df_list):
@@ -73,7 +77,7 @@ def main():
         7. 재예측 수행 및 평가 출력.
     """
     files, df_list = get_raw_df(datasets_path)
-    feature_added_df_list = delete_nulls_and_add_time_column(df_list, files)
+    feature_added_df_list = delete_nulls_and_add_time_column(df_list, files, target)
     save_feature_add_df_list(feature_added_df_list, feature_added_df_list, path, site_names)
     print(f" 첫 번째 사이트 DataFrame의 컬럼 목록 : {feature_added_df_list[0].columns}")
 
